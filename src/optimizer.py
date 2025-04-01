@@ -19,6 +19,8 @@ with open('config.yaml') as f:
     yaml_config = yaml.safe_load(f)
 rules_file_path = '/tmp/prometheus-rules'
 
+prometheus_base_path = os.getenv("PROMETHEUS_BASE_PATH", yaml_config['prometheus_analysis'].get('base_path', ''))
+
 
 def analyze_grafana_metrics():
     print("Analyzing Grafana")
@@ -48,8 +50,8 @@ def prometheus_pod_discovery(api_instance, namespace : str, labels : str) -> dic
                 })
 
 def lookup_prometheus_rules(prom_ip):
-    global PROMETHEUS_BASE_PATH
-    url = f"http://{prom_ip}:9090{PROMETHEUS_BASE_PATH}/api/v1/rules"
+    global prometheus_base_path
+    url = f"http://{prom_ip}:9090{prometheus_base_path}/api/v1/rules"
     print(f"Fetching Prometheus rules from {url}")  # Debugging log
     r = requests.get(url)
     r = r.json()
@@ -202,7 +204,6 @@ if __name__ == "__main__":
             print("Skipping, no rules found in pod.")
     if yaml_config['prometheus_analysis']['enabled']:
         PROMETHEUS_ADDRESS = yaml_config['prometheus_analysis']['address']
-        PROMETHEUS_BASE_PATH = os.getenv("PROMETHEUS_BASE_PATH", yaml_config['prometheus_analysis'].get('base_path', ''))
         analyze_prometheus_metrics()
     process_metrics_json()
     if yaml_config.get('mark_as_used_metric'):
