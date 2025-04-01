@@ -11,6 +11,8 @@ data:
     prometheus_analysis:
       enabled: true
       address: "http://thanos-query-frontend.thanos.svc:9090"
+      # Specify custom base path for the Prometheus, default is empty ""
+      # base_path: "/prometheus"
     fetch_rules:
       enabled: true
       prometheus_discovery:
