@@ -21,7 +21,6 @@ rules_file_path = '/tmp/prometheus-rules'
 
 prometheus_base_path = os.getenv("PROMETHEUS_BASE_PATH", yaml_config['prometheus_analysis'].get('base_path', ''))
 
-
 def analyze_grafana_metrics():
     print("Analyzing Grafana")
     result = subprocess.run(["mimirtool", "analyze", "grafana", "--address", GRAFANA_ADDRESS, "--key", GRAFANA_API_TOKEN], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -39,15 +38,21 @@ def k8s_config():
     core_v1 = core_v1_api.CoreV1Api()
     return core_v1
 
-def prometheus_pod_discovery(api_instance, namespace : str, labels : str) -> dict():
-    ret = api_instance.list_namespaced_pod(namespace=namespace, label_selector=labels)
+def prometheus_pod_discovery(api_instance, namespace: str, labels) -> dict:
+    # Fix: Convert dict to label selector string if needed
+    if isinstance(labels, dict):
+        label_selector = ",".join([f"{k}={v}" for k, v in labels.items()])
+    else:
+        label_selector = labels
+    ret = api_instance.list_namespaced_pod(namespace=namespace, label_selector=label_selector)
     for item in ret.items:
         print(f"Prometheus pod has been successfully discovered. Name: {item.metadata.name}")
-        return({"namespace": item.metadata.namespace,
-                "pod_name": item.metadata.name,
-                "container": item.spec.containers[0].name,
-                "pod_ip": item.status.pod_ip
-                })
+        return {
+            "namespace": item.metadata.namespace,
+            "pod_name": item.metadata.name,
+            "container": item.spec.containers[0].name,
+            "pod_ip": item.status.pod_ip
+        }
 
 def lookup_prometheus_rules(prom_ip):
     global prometheus_base_path
@@ -119,6 +124,7 @@ def unique_name_replacer(text):
 def analyze_rules_with_mimirtool():
     global rules_file_path
     os.system(f"mimirtool analyze rule-file {rules_file_path}/*")
+
 def analyze_prometheus_metrics():
     print("Analyzing Prometheus")
     subprocess.run(["mimirtool", "analyze", "prometheus", "--address", PROMETHEUS_ADDRESS])
@@ -128,7 +134,6 @@ def process_metrics_json():
     os.system('jq -r ".in_use_metric_counts[].metric" prometheus-metrics.json | sort > used_metrics.txt')
     os.system('jq -r ".additional_metric_counts[].metric" prometheus-metrics.json | sort > unused_metrics.txt')
     print("Analyze have been successfully completed")
-
 
 def mark_as_used(re_pattern) -> None:
     with open("unused_metrics.txt", "r") as f:
@@ -180,7 +185,6 @@ def write_config_to_file(config, file_path):
     with open(file_path, 'w') as file:
         yaml.dump(config, file, default_flow_style=False)
     print(f"Config written to {file_path}")
-
 
 if __name__ == "__main__":
     slack_token = yaml_config['slack']['token']
