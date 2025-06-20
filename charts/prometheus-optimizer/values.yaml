@@ -1,40 +1,34 @@
-# Configuration for the cron job schedule and image details.
 cronJob:
-  schedule: "0 6 1 * *"  # Run at 06:00 on the first day of every month.
+  schedule: "0 6 * * *"  # Run every day at 6 AM (adjust as needed)
   image:
-    repository: ghcr.io/angelscloud/prometheus-optimizer  # Image repository.
-    tag: latest  # Use the latest image tag.
-    pullPolicy: Always  # Always pull the latest image.
+    repository: ghcr.io/angelscloud/prometheus-optimizer
+    tag: latest
+    pullPolicy: Always
 
-# Service Account configuration for Kubernetes.
 serviceAccount:
-  name: prometheus-optimizer-service-account  # Name of the service account to use.
+  name: prometheus-optimizer-service-account
 
-# ConfigMap settings containing operational configurations for Prometheus Optimizer.
 configMap:
   data:
-    # Grafana configuration details.
     grafana:
-      enabled: true  # Enable integration with Grafana.
-      api_token: "your-token-here"  # Service Account/API token for Grafana with necessary permissions.
-      address: "http://grafana.grafana.svc:3000"  # URL of the Grafana service.
+      enabled: true
+      api_token: ""
+      address: "http://kube-prometheus-grafana.kube-prometheus.svc:80"
 
-    # Configuration for Prometheus analysis.
     prometheus_analysis:
-      enabled: true  # Enable analysis of Prometheus data.
-      address: "http://thanos-query-frontend.thanos.svc:9090"  # URL of the Prometheus/Thanos.
+      enabled: true
+      address: "http://mimir-test-query-frontend.mimir-test.svc:8080"
 
-    # Rules for fetching Prometheus metrics.
     fetch_rules:
-      enabled: true  # Enable rule fetching.
+      enabled: true
       prometheus_discovery:
-        namespace: "prometheus"  # Kubernetes namespace where Prometheus is deployed.
-        labels: "app=prometheus, component=server"  # Labels used to discover Prometheus pods.
+        namespace: "kube-prometheus"
+        labels:
+          app.kubernetes.io/name: prometheus
+          app.kubernetes.io/instance: kube-prometheus-kube-prome-prometheus
 
-    # Slack configuration for sending notifications or reports.
     slack:
-      token: "xoxb-your-slack-token-here"  # Slack bot token with files:write permissions.
-      channel: "your-slack-channel-name"  # Slack channel to send reports.
+      token: "<PUT-YOUR-SLACK-BOT-TOKEN-HERE>"
+      channel: "#metrics-optimizer"
 
-    # Optional: Regex pattern for marking metrics that appear unused but should be retained.
     mark_as_used_metric: "^maas.*"
